@@ -117,7 +117,7 @@ if (null !== $track) {
 	'order by pace asc,n';
 	foreach ($dbh->query($q) as $row)
 		echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}/{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
-	echo "</table><h2>tracks to game</h2><table><tr><th>name</th><th>len</th><th>potential points</th></tr>";
+	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table><tr><th>name</th><th>len</th><th>potential points</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
 	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(distinct length)) cnt, '.
@@ -135,7 +135,7 @@ if (null !== $track) {
 	krsort($scores);
 
 	$pos = 0;
-	echo "<h2>championship</h2><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
+	echo "<h2>championship</h2><p>(The number of people a person is ahead of on any track, ish.)</p><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
 	foreach ($scores as $score => $players) {
 		++$pos;
 		echo "<tr><td class=\"right\">$pos</td><td class=\"right\">$score</td><td>";
@@ -174,6 +174,7 @@ if (null !== $track) {
 ?>
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
 <p><a href="/">back</a></p>
+<p>This site is free software; both <a href="http://git.goeswhere.com/?p=ttscores.git;a=summary">the website</a> and <a href="http://git.goeswhere.com/?p=tt.git;a=summary">the backend</a>.  I encourage you to submit or suggest changes instead of hosting your own.</p>
 <p><a href="http://blog.prelode.com/">Faux' blog</a></p>
 </body>
 </html>
