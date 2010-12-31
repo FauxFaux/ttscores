@@ -1,10 +1,14 @@
+<<?='?'?>xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML Basic 1.1//EN"
+    "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">
 <html><head>
 <style type="text/css">
 	td,th { border: 1px solid black; padding: 0.5em }
 	.right { text-align: right }
 	.sortable tr th { cursor: pointer }
 </style>
-<script src="sorttable.js"></script>
+<script src="sorttable.js" type="text/javascript"></script>
 <title>ttscores: <?
 
 if (isset($_GET['track']))
@@ -170,7 +174,7 @@ if (null !== $track) {
 	}
 
 	echo "</table>";
-	echo '<p><form action="/" method="GET">View player: <input type="text" name="player"/><input type="submit" value="lookup"/></form></p>';
+	echo '<form action="/" method="get"><p>View player: <input type="text" name="player"/><input type="submit" value="lookup"/></p></form>';
 	echo "<h2>tracks</h2><table class=\"sortable\"><tr><th>n</th><th>track</th><th>hs</th><th>length</th><th>winners</th></tr>";
 	$prevn = -1;
 	foreach ($dbh->query('select track n, name, length, player pwner, pos, (select count(*) from highscore b where a.track=b.track and player !="") cnt ' .
@@ -187,7 +191,7 @@ if (null !== $track) {
 
 		echo suffix($row['pos']) . ': ' . player($row['pwner']) . ", ";
 	}
-	echo "</table>";
+	echo "</td></tr></table>";
 } 
 ?>
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
