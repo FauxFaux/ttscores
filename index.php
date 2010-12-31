@@ -27,7 +27,7 @@ function suffix($number) {
 
 function track($n, $name) {
 	$esc = htmlentities($name);
-	return "<a href=\"?track=$n#$esc\">$n. $esc</a>";
+	return "<a href=\"?track=$n#$esc\">$esc</a>";
 }
 
 function player($name) {
@@ -79,9 +79,12 @@ function players() {
 	return $players;
 }
 
+$sortdown = '<span id="sorttable_sortfwdind">&nbsp;&#x25BE;</span>';
+$sortup = '<span id="sorttable_sortrevind">&nbsp;&#x25B4;</span>';
+
 if (null !== $track) {
 	foreach ($dbh->query('select name from track_names where track=' . $track) as $row)
-		echo htmlentities($row["name"]) . "</title></head><body><h2>" . track($track, $row['name']) . '</h2>';
+		echo htmlentities($row["name"]) . "</title></head><body><h2>$track. " . track($track, $row['name']) . '</h2>';
 	echo '<table class="sortable"><tr><th>pos</th><th>name</th><th>time</th></tr>';
 	$pos = 1;
 	$prevtime = 0;
@@ -106,7 +109,7 @@ if (null !== $track) {
 	$completers = completers();
 	echo "player: $esc</title></head><body><h2>$esc: " . $players[$player] . " points</h2>";
 
-	echo "<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>first</th><th>player</th><th>pace</th></tr>\n";
+	echo "<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>first</th><th>player</th><th class=\"sorttable_sorted\">pace$sortdown</th></tr>\n";
 	$q = 'select track n,name,pos,first,you,(you/first-1)*100 pace from (' .
 	'select a.track,' .
 	'(select length from highscore b where track=a.track and pos=1) first,' .
@@ -119,7 +122,7 @@ if (null !== $track) {
 	'order by pace asc,n';
 	foreach ($dbh->query($q) as $row)
 		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}</td><td class=\"right\">{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
-	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>potential points</th></tr>";
+	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>potential points$sortup</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
 	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*))-2 cnt, '.
