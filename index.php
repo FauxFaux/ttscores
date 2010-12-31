@@ -37,11 +37,21 @@ $date = stat('tt.db');
 $date = $date[9];
 $dbh = new PDO('sqlite:tt.db');
 
+
+function completers() {
+	global $dbh;
+	$ret = array();
+	foreach ($dbh->query('select track,count(distinct length) cnt from highscore where player!="" group by track') as $row)
+		$ret[$row['track']] = $row['cnt'];
+	return $ret;
+}
+
 function players() {
 	global $dbh;
 	$prevtrack = -1;
+	$completers = completers();
 	$players = array();
-	foreach ($dbh->query('select track,player,length,hard from highscore where pos<=50 order by track,length') as $row) {
+	foreach ($dbh->query('select track,player,length,hard from highscore where pos<=50 and player!="" order by track,length') as $row) {
 		if (!$row['player'])
 			continue;
 		$n = $row['track'];
@@ -49,7 +59,7 @@ function players() {
 		if ($prevtrack != $n) {
 			$prevtrack = $n;
 			$prevlen = $len;
-			$points = 10;
+			$points = $completers[$n];
 		}
 
 		if ($points <= 0)
@@ -74,7 +84,7 @@ if (null !== $track) {
 	foreach ($dbh->query('select player pwner, length ' .
 				'from highscore ' .
 				'inner join track_names using (track) ' .
-				'where track=' . $track) as $row) {
+				'where pwner != "" and track=' . $track) as $row) {
 		$len = $row['length'];
 		if ($len != $prevtime) {
 			$prevtime = $len;
@@ -87,6 +97,7 @@ if (null !== $track) {
 	$esc = htmlentities($player);
 	$quoted = $dbh->quote($player);
 	$players = players();
+	$completers = completers();
 	echo "player: $esc</title></head><body><h2>$esc: " . $players[$player] . " points</h2>";
 
 	echo "<table><tr><th>track</th><th>pos</th><th>first</th><th>player</th><th>pace</th></tr>\n";
@@ -101,7 +112,7 @@ if (null !== $track) {
 	'where first is not null and you is not null ' .
 	'order by pace asc,n';
 	foreach ($dbh->query($q) as $row)
-		echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
+		echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}/{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
 	echo "</table>";
 } else {
 	echo "summary</title></head><body>";
