@@ -120,7 +120,7 @@ if (null !== $track) {
 	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table><tr><th>name</th><th>len</th><th>potential points</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
-	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(distinct length)) cnt, '.
+	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*))-2 cnt, '.
 	'(select length from highscore b where pos=1 and a.track=b.track) length '.
 	'from highscore a inner join track_names using (track) group by track order by cnt desc limit 30') as $row)
 		echo "<tr><td>" . track($row['n'], $row['name']) . '</td><td class="right">' . number_format($row['length'],2) . '</td><td class="right">' . $row['cnt'] . '</td></tr>';
