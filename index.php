@@ -30,23 +30,39 @@ function suffix($number) {
 }
 
 function track($n, $name) {
+	global $inctrackurl;
 	$esc = htmlentities($name);
-	return "<a href=\"?track=$n#$esc\">$esc</a>";
+	return "<a href=\"?track=$n$inctrackurl#$esc\">$esc</a>";
 }
 
 function completed() {
 	global $dbh;
 	$ret = array();
-	foreach ($dbh->query('select player,count(*) cnt from highscore group by player') as $row)
+	foreach ($dbh->query('select player,count(*) cnt from highscore where 1 ' . inctrack() . ' group by player') as $row)
 		$ret[$row['player']] = $row['cnt'];
 	return $ret;
 }
 
 function player($name) {
-	global $dbh, $completed;
+	global $inctrackurl, $completed;
 	$esc = htmlentities($name);
-	return '<a href="?player=' . urlencode(htmlentities($esc)) . "\">$esc ({$completed[$name]})</a>";
+	return '<a href="?player=' . urlencode(htmlentities($esc)) . "$inctrackurl\">$esc ({$completed[$name]})</a>";
 }
+
+function inctrack() {
+	global $inctrack;
+	if ($inctrack)
+		return "and track in ($inctrack)";
+}
+
+$inctrack = array();
+if (isset($_GET{'tracks'}))
+	foreach (preg_split('/,/', $_GET{'tracks'}) as $t)
+		$inctrack[] = (int)$t;
+
+$inctrack = implode(',',$inctrack);
+if ($inctrack)
+	$inctrackurl = "&tracks=" . $inctrack;
 
 $date = stat('tt.db');
 $date = $date[9];
@@ -71,7 +87,7 @@ function players() {
 	$prevtrack = -1;
 	$completers = completers();
 	$players = array();
-	foreach ($dbh->query('select track,player,length,hard from highscore where pos<=50 and player!="" order by track,length') as $row) {
+	foreach ($dbh->query('select track,player,length,hard from highscore where pos<=50 and player!="" ' . inctrack() . ' order by track,length') as $row) {
 		if (!$row['player'])
 			continue;
 		$n = $row['track'];
@@ -134,16 +150,22 @@ if (null !== $track) {
 	'from highscore a ' .
 	'group by a.track ' .
 	') join track_names using (track) ' .
-	'where first is not null and you is not null ' .
+	'where first is not null and you is not null ' . inctrack() .
 	'order by pace asc,n';
-	foreach ($dbh->query($q) as $row)
+	$ns = array();
+	foreach ($dbh->query($q) as $row) {
+		$ns[] = $row['n'];
 		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}</td><td class=\"right\">{$completers[$row['n']]}</td><td class=\"right\" sorttable_customkey=\"" . points($row['pos'], $completers[$row['n']]) . "\">" . number_format(points($row['pos'], $completers[$row['n']]), 1) . "</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
-	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>position$sortup</th></tr>";
+	}
+	echo "</table><p>(<a href=\"/?tracks=" . implode(',', $ns) . "\">" . ($inctrack ? "union" : "set") . " track filter</a>)";
+	if ($inctrack)
+		echo " (<a href=\"?player=" . urlencode($esc) . "\">clear track filter</a>)";
+	echo "</p><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>position$sortup</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
-	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*))-2 cnt, '.
+	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*)) cnt, '.
 	'(select length from highscore b where pos=1 and a.track=b.track) length '.
-	'from highscore a inner join track_names using (track) group by track order by cnt desc limit 30') as $row)
+	'from highscore a inner join track_names using (track) where 1 ' . inctrack() . ' group by track order by cnt desc limit 30') as $row)
 		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . '</td><td class="right">' . number_format($row['length'],2) . '</td><td class="right">' . $row['cnt'] . '</td></tr>';
 	echo '</table>';
 
@@ -157,7 +179,11 @@ if (null !== $track) {
 	krsort($scores);
 
 	$pos = 0;
-	echo "<h2>championship</h2><p>(sum(10*0.05^(pos/completed)))</p><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
+	echo "<h2>championship</h2><p>(sum(10*0.05^(pos/completed)))</p>" .
+		"<p>(<a href=\"?tracks=3,4,5,7,8,0,1,423,10,9,6\">A-list tracks only</a>)";
+	if ($inctrack)
+		echo " (<a href=\"?\">clear track filter</a>)";
+	echo "</p><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
 	foreach ($scores as $score => $players) {
 		++$pos;
 		echo "<tr><td class=\"right\">$pos</td><td class=\"right\">$score</td><td>";
@@ -180,7 +206,7 @@ if (null !== $track) {
 	foreach ($dbh->query('select track n, name, length, player pwner, pos, (select count(*) from highscore b where a.track=b.track and player !="") cnt ' .
 				'from highscore a ' .
 				'inner join track_names using (track) ' .
-				'where pos <= 3 and pwner != "" order by track,pos') as $row) {
+				'where pos <= 3 and pwner != "" ' . inctrack() . ' order by track,pos') as $row) {
 		if ($prevn != $row['n']) {
 			if ($prevn != -1)
 				echo "</td></tr>\n";
@@ -195,7 +221,7 @@ if (null !== $track) {
 } 
 ?>
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
-<p><a href="/">back</a></p>
+<p><a href="/?<?=$inctrackurl?>">back</a></p>
 <p>This site is free software; <a href="http://git.goeswhere.com/?p=ttscores.git;a=summary">it's source</a> is available.  I encourage you to submit or suggest changes instead of hosting your own.</p>
 <p><a href="http://blog.prelode.com/">Faux' blog</a>.  Thanks to archee for <a href="http://www.gravitysensation.com/trickytruck/">Tricky Trucks</a>.</p>
 </body>
