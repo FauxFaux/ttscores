@@ -30,15 +30,25 @@ function track($n, $name) {
 	return "<a href=\"?track=$n#$esc\">$esc</a>";
 }
 
+function completed() {
+	global $dbh;
+	$ret = array();
+	foreach ($dbh->query('select player,count(*) cnt from highscore group by player') as $row)
+		$ret[$row['player']] = $row['cnt'];
+	return $ret;
+}
+
 function player($name) {
+	global $dbh, $completed;
 	$esc = htmlentities($name);
-	return '<a href="?player=' . urlencode(htmlentities($esc)) . "\">$esc</a>";
+	return '<a href="?player=' . urlencode(htmlentities($esc)) . "\">$esc ({$completed[$name]})</a>";
 }
 
 $date = stat('tt.db');
 $date = $date[9];
 $dbh = new PDO('sqlite:tt.db');
 
+$completed = completed();
 
 function completers() {
 	global $dbh;
@@ -46,6 +56,10 @@ function completers() {
 	foreach ($dbh->query('select track,count(*) cnt from highscore where player!="" group by track') as $row)
 		$ret[$row['track']] = $row['cnt'];
 	return $ret;
+}
+
+function points($points, $total) {
+	return 10 * pow(0.05,($points)/$total);
 }
 
 function players() {
@@ -61,20 +75,18 @@ function players() {
 		if ($prevtrack != $n) {
 			$prevtrack = $n;
 			$prevlen = $len;
-			$points = $completers[$n];
+			$total = $completers[$n];
+			$points = 0;
 		}
 
-		if ($points <= 0)
-			continue;
-
 		if ($prevlen != $len) {
-			$points -= $skip;
-			$skip = 0;
+			$points += $skip;
+			$skip = 1;
 			$prevlen = $len;
 		} else
 			++$skip;
 
-		$players[$row['player']] += $points + $row['hard'];
+		$players[$row['player']] += points($points, $total);
 	}
 	return $players;
 }
@@ -107,9 +119,9 @@ if (null !== $track) {
 	$quoted = $dbh->quote($player);
 	$players = players();
 	$completers = completers();
-	echo "player: $esc</title></head><body><h2>$esc: " . $players[$player] . " points</h2>";
+	echo "player: $esc</title></head><body><h2>" . player($player) . ": " . number_format($players[$player],1) . " points</h2>";
 
-	echo "<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>first</th><th>player</th><th class=\"sorttable_sorted\">pace$sortdown</th></tr>\n";
+	echo "<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>points</th><th>first</th><th>player</th><th class=\"sorttable_sorted\">pace$sortdown</th></tr>\n";
 	$q = 'select track n,name,pos,first,you,(you/first-1)*100 pace from (' .
 	'select a.track,' .
 	'(select length from highscore b where track=a.track and pos=1) first,' .
@@ -121,8 +133,8 @@ if (null !== $track) {
 	'where first is not null and you is not null ' .
 	'order by pace asc,n';
 	foreach ($dbh->query($q) as $row)
-		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}</td><td class=\"right\">{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
-	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>potential points$sortup</th></tr>";
+		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}</td><td class=\"right\">{$completers[$row['n']]}</td><td class=\"right\" sorttable_customkey=\"" . points($row['pos'], $completers[$row['n']]) . "\">" . number_format(points($row['pos'], $completers[$row['n']]), 1) . "</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
+	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>position$sortup</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
 	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*))-2 cnt, '.
@@ -135,12 +147,13 @@ if (null !== $track) {
 	echo "summary</title></head><body>";
 	$players = players();
 	$scores = array();
-	foreach ($players as $player => $score)
-		$scores[$score][] = $player;
+	foreach ($players as $player => $score) {
+		$scores[round($score)][] = $player;
+	}
 	krsort($scores);
 
 	$pos = 0;
-	echo "<h2>championship</h2><p>(The number of people a person is ahead of on any track, ish.)</p><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
+	echo "<h2>championship</h2><p>(sum(10*0.05^(pos/completed)))</p><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
 	foreach ($scores as $score => $players) {
 		++$pos;
 		echo "<tr><td class=\"right\">$pos</td><td class=\"right\">$score</td><td>";
@@ -180,7 +193,7 @@ if (null !== $track) {
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
 <p><a href="/">back</a></p>
 <p>This site is free software; <a href="http://git.goeswhere.com/?p=ttscores.git;a=summary">it's source</a> is available.  I encourage you to submit or suggest changes instead of hosting your own.</p>
-<p><a href="http://blog.prelode.com/">Faux' blog</a></p>
+<p><a href="http://blog.prelode.com/">Faux' blog</a>.  Thanks to archee for <a href="http://www.gravitysensation.com/trickytruck/">Tricky Trucks</a>.</p>
 </body>
 </html>
 
