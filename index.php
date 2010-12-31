@@ -2,7 +2,9 @@
 <style type="text/css">
 	td,th { border: 1px solid black; padding: 0.5em }
 	.right { text-align: right }
+	.sortable tr th { cursor: pointer }
 </style>
+<script src="sorttable.js"></script>
 <title>ttscores: <?
 
 if (isset($_GET['track']))
@@ -80,7 +82,7 @@ function players() {
 if (null !== $track) {
 	foreach ($dbh->query('select name from track_names where track=' . $track) as $row)
 		echo htmlentities($row["name"]) . "</title></head><body><h2>" . track($track, $row['name']) . '</h2>';
-	echo '<table><tr><th>pos</th><th>name</th><th>time</th></tr>';
+	echo '<table class="sortable"><tr><th>pos</th><th>name</th><th>time</th></tr>';
 	$pos = 1;
 	$prevtime = 0;
 	foreach ($dbh->query('select player pwner, length ' .
@@ -104,7 +106,7 @@ if (null !== $track) {
 	$completers = completers();
 	echo "player: $esc</title></head><body><h2>$esc: " . $players[$player] . " points</h2>";
 
-	echo "<table><tr><th>track</th><th>pos</th><th>first</th><th>player</th><th>pace</th></tr>\n";
+	echo "<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>first</th><th>player</th><th>pace</th></tr>\n";
 	$q = 'select track n,name,pos,first,you,(you/first-1)*100 pace from (' .
 	'select a.track,' .
 	'(select length from highscore b where track=a.track and pos=1) first,' .
@@ -116,14 +118,14 @@ if (null !== $track) {
 	'where first is not null and you is not null ' .
 	'order by pace asc,n';
 	foreach ($dbh->query($q) as $row)
-		echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}/{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
-	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table><tr><th>name</th><th>len</th><th>potential points</th></tr>";
+		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}</td><td class=\"right\">{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
+	echo "</table><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>potential points</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
 	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*))-2 cnt, '.
 	'(select length from highscore b where pos=1 and a.track=b.track) length '.
 	'from highscore a inner join track_names using (track) group by track order by cnt desc limit 30') as $row)
-		echo "<tr><td>" . track($row['n'], $row['name']) . '</td><td class="right">' . number_format($row['length'],2) . '</td><td class="right">' . $row['cnt'] . '</td></tr>';
+		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . '</td><td class="right">' . number_format($row['length'],2) . '</td><td class="right">' . $row['cnt'] . '</td></tr>';
 	echo '</table>';
 
 } else {
@@ -153,7 +155,7 @@ if (null !== $track) {
 
 	echo "</table>";
 	echo '<p><form action="/" method="GET">View player: <input type="text" name="player"/><input type="submit" value="lookup"/></form></p>';
-	echo "<h2>tracks</h2><table><tr><th>track</th><th>hs</th><th>length</th><th>winners</th></tr>";
+	echo "<h2>tracks</h2><table class=\"sortable\"><tr><th>n</th><th>track</th><th>hs</th><th>length</th><th>winners</th></tr>";
 	$prevn = -1;
 	foreach ($dbh->query('select track n, name, length, player pwner, pos, (select count(*) from highscore b where a.track=b.track and player !="") cnt ' .
 				'from highscore a ' .
@@ -162,7 +164,7 @@ if (null !== $track) {
 		if ($prevn != $row['n']) {
 			if ($prevn != -1)
 				echo "</td></tr>\n";
-			echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['cnt']}</td><td class=\"right\">" . number_format($row['length'], 2) . "</td><td>";
+			echo "<tr><td>{$row['n']}</td><td sorttable_customkey=\"" . htmlentities($row['name']) . "\">" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['cnt']}</td><td class=\"right\">" . number_format($row['length'], 2) . "</td><td>";
 			$prevn = $row['n'];
 			$s = "";
 		}
