@@ -41,7 +41,7 @@ $dbh = new PDO('sqlite:tt.db');
 function completers() {
 	global $dbh;
 	$ret = array();
-	foreach ($dbh->query('select track,count(distinct length) cnt from highscore where player!="" group by track') as $row)
+	foreach ($dbh->query('select track,count(*) cnt from highscore where player!="" group by track') as $row)
 		$ret[$row['track']] = $row['cnt'];
 	return $ret;
 }
@@ -66,9 +66,11 @@ function players() {
 			continue;
 
 		if ($prevlen != $len) {
-			--$points;
+			$points -= $skip;
+			$skip = 0;
 			$prevlen = $len;
-		}
+		} else
+			++$skip;
 
 		$players[$row['player']] += $points + $row['hard'];
 	}
