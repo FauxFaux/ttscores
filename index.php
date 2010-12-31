@@ -79,7 +79,7 @@ if (null !== $track) {
 	foreach ($dbh->query('select name from track_names where track=' . $track) as $row)
 		echo htmlentities($row["name"]) . "</title></head><body><h2>" . track($track, $row['name']) . '</h2>';
 	echo '<table><tr><th>pos</th><th>name</th><th>time</th></tr>';
-	$pos = 0;
+	$pos = 1;
 	$prevtime = 0;
 	foreach ($dbh->query('select player pwner, length ' .
 				'from highscore ' .
@@ -88,8 +88,10 @@ if (null !== $track) {
 		$len = $row['length'];
 		if ($len != $prevtime) {
 			$prevtime = $len;
-			++$pos;
-		}
+			$pos+=$skip;
+			$skip = 1;
+		} else
+			++$skip;
 		echo "<tr><td>$pos</td><td>" . player($row['pwner']) . "</td><td>" . number_format($len,2) . "</td></tr>\n";
 	}
 	echo "</table>";
