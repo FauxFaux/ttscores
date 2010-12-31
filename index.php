@@ -33,6 +33,8 @@ function player($name) {
 	return '<a href="?player=' . urlencode(htmlentities($esc)) . "\">$esc</a>";
 }
 
+$date = stat('tt.db');
+$date = $date[9];
 $dbh = new PDO('sqlite:tt.db');
 
 function players() {
@@ -129,22 +131,25 @@ if (null !== $track) {
 	echo "</table>";
 	echo '<p><form action="/" method="GET">View player: <input type="text" name="player"/><input type="submit" value="lookup"/></form></p>';
 	echo "<h2>tracks</h2><table><tr><th>track</th><th>hs</th><th>length</th><th>winners</th></tr>";
-	$prevn = 0;
-	foreach ($dbh->query('select track n, name, length, player pwner, pos, (select count(*) from highscore b where a.track=b.track and player is not null) cnt ' .
+	$prevn = -1;
+	foreach ($dbh->query('select track n, name, length, player pwner, pos, (select count(*) from highscore b where a.track=b.track and player !="") cnt ' .
 				'from highscore a ' .
 				'inner join track_names using (track) ' .
-				'where pos <= 3 and pwner != "" order by track') as $row) {
+				'where pos <= 3 and pwner != "" order by track,pos') as $row) {
 		if ($prevn != $row['n']) {
-			echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['cnt']}</td><td class=\"right\">" . number_format($row['length'], 2) . "</td><td>$s</td>\n";
+			if ($prevn != -1)
+				echo "</td></tr>\n";
+			echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['cnt']}</td><td class=\"right\">" . number_format($row['length'], 2) . "</td><td>";
 			$prevn = $row['n'];
 			$s = "";
 		}
 
-		$s .= suffix($row['pos']) . ': ' . player($row['pwner']) . ", ";
+		echo suffix($row['pos']) . ': ' . player($row['pwner']) . ", ";
 	}
 	echo "</table>";
 } 
 ?>
+<p>Data from <?=date(DATE_RFC822, $date)?></p>
 <p><a href="/">back</a></p>
 <p><a href="http://blog.prelode.com/">Faux' blog</a></p>
 </body>
