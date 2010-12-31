@@ -113,7 +113,15 @@ if (null !== $track) {
 	'order by pace asc,n';
 	foreach ($dbh->query($q) as $row)
 		echo "<tr><td>" . track($row['n'], $row['name']) . "</td><td class=\"right\">{$row['pos']}/{$completers[$row['n']]}</td><td class=\"right\">" . number_format($row['first'], 2) . "</td><td class=\"right\">" . number_format($row['you'], 2) . "</td><td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
-	echo "</table>";
+	echo "</table><h2>tracks to game</h2><table><tr><th>name</th><th>len</th><th>potential points</th></tr>";
+
+	foreach ($dbh->query('select track n,name, '.
+	'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(distinct length)) cnt, '.
+	'(select length from highscore b where pos=1 and a.track=b.track) length '.
+	'from highscore a inner join track_names using (track) group by track order by cnt desc limit 30') as $row)
+		echo "<tr><td>" . track($row['n'], $row['name']) . '</td><td class="right">' . number_format($row['length'],2) . '</td><td class="right">' . $row['cnt'] . '</td></tr>';
+	echo '</table>';
+
 } else {
 	echo "summary</title></head><body>";
 	$players = players();
