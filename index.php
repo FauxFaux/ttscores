@@ -170,7 +170,7 @@ if (null !== $track) {
 	if ($inctrack)
 		echo " (<a href=\"?player=" . urlencode($esc) . "\">clear track filter</a>)";
 	echo "</p><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p>" .
-		"<table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>position$sortup</th><th>potential points</th></tr>";
+		"<table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>position$sortup</th><th>est. points</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
 			'coalesce((select pos from highscore b where player=' . $quoted . ' and a.track=b.track),count(*)) cnt, '.
