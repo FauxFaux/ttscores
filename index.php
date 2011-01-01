@@ -243,7 +243,7 @@ if (null !== $track) {
 ?>
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
 <p><a href="/?<?=$inctrackurl?>">back</a></p>
-<p>This site is free software; <a href="http://git.goeswhere.com/?p=ttscores.git;a=summary">it's source</a> is available.
+<p>This site is free software; <a href="http://git.goeswhere.com/?p=ttscores.git;a=summary">its source</a> is available.
 I encourage you to submit or suggest changes instead of hosting your own.</p>
 <p><a href="http://blog.prelode.com/">Faux' blog</a>.
 Thanks to archee for <a href="http://www.gravitysensation.com/trickytruck/">Tricky Trucks</a>.</p>
