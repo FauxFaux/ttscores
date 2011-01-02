@@ -70,7 +70,7 @@ $dbh = new PDO('sqlite:tt.db');
 
 $completed = completed();
 
-$back = "<p>(<a href=\"/$inctrackurl\">back to championship</a>)</p>";
+$back = "<p>(<a href=\"/?$inctrackurl\">back to championship</a>)</p>";
 
 function completers() {
 	global $dbh;
