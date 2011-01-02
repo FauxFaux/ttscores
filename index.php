@@ -59,7 +59,7 @@ $inctrack = array();
 if (isset($_GET{'tracks'}))
 	foreach (preg_split('/,/', $_GET{'tracks'}) as $t)
 		$inctrack[] = (int)$t;
-
+sort($inctrack);
 $inctrack = implode(',',$inctrack);
 if ($inctrack)
 	$inctrackurl = "&tracks=" . $inctrack;
@@ -167,8 +167,12 @@ if (null !== $track) {
 			"<td class=\"right\">" . number_format($row['you'], 2) . "</td>" .
 			"<td class=\"right\">" . number_format($row['pace']) . "%</td></tr>";
 	}
+	echo "</table><p>";
+	sort($ns);
+	$newinc = implode(',', $ns);
+	if ($inctrack != $newinc)
+		echo "(<a href=\"/?tracks=$newinc\">" . ($inctrack ? "union" : "set") . " track filter</a>)";
 
-	echo "</table><p>(<a href=\"/?tracks=" . implode(',', $ns) . "\">" . ($inctrack ? "union" : "set") . " track filter</a>)";
 	if ($inctrack)
 		echo " (<a href=\"?player=" . urlencode($esc) . "\">clear track filter</a>)";
 	echo "</p><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p>" .
@@ -197,8 +201,10 @@ if (null !== $track) {
 	krsort($scores);
 
 	$pos = 0;
-	echo "<h2>championship</h2><p>(sum(10*0.05^(pos/completed)))</p>" .
-		"<p>(<a href=\"?tracks=3,4,5,7,8,0,1,423,10,9,6\">A-list tracks only</a>)";
+	$alist = '3,4,5,7,8,0,1,423,10,9,6';
+	echo "<h2>championship</h2><p>(sum(10*0.05^(pos/completed)))</p><p>";
+	if ($inctrack != $alist)
+		echo "(<a href=\"?tracks=$alist\">A-list tracks only</a>)";
 	if ($inctrack)
 		echo " (<a href=\"?\">clear track filter</a>)";
 	echo "</p><table><tr><th>pos</th><th>points</th><th>name</th></tr>";
