@@ -194,7 +194,7 @@ if (null !== $track) {
 	echo '<h2>scores at risk</h2><table class="sortable"><tr><th>n</th><th>name</th><th>hours</th></tr>';
 	foreach ($dbh->query('select track n,name,(14*24)-(strftime(\'%s\',\'now\')-taken/1000)/60./60 hours ' .
 			'from highscore inner join track_names using (track) ' .
-			'where player=' . $quoted . ' and taken!=0 order by taken limit 10') as $row)
+			'where player=' . $quoted . ' and taken!=0 ' . inctrack() . ' order by taken limit 10') as $row)
 		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . '</td>' .
 			 '<td class="right">' . number_format($row['hours']) . '</td></tr>';
 	
