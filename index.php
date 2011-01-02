@@ -70,6 +70,8 @@ $dbh = new PDO('sqlite:tt.db');
 
 $completed = completed();
 
+$back = "<p>(<a href=\"/$inctrackurl\">back to championship</a>)</p>";
+
 function completers() {
 	global $dbh;
 	$ret = array();
@@ -118,7 +120,7 @@ $sortup = '<span id="sorttable_sortrevind">&nbsp;&#x25B4;</span>';
 if (null !== $track) {
 	foreach ($dbh->query('select name from track_names where track=' . $track) as $row)
 		echo htmlentities($row["name"]) . "</title></head><body><h2>$track. " . track($track, $row['name']) . '</h2>';
-	echo '<table class="sortable"><tr><th>pos</th><th>name</th><th>time</th></tr>';
+	echo $back . '<table class="sortable"><tr><th>pos</th><th>name</th><th>time</th></tr>';
 	$pos = 1;
 	$prevtime = 0;
 	foreach ($dbh->query('select player pwner, length ' .
@@ -142,7 +144,7 @@ if (null !== $track) {
 	$completers = completers();
 	echo "player: $esc</title></head><body><h2>" . player($player) . ": " . number_format($players[$player],1) . " points</h2>";
 
-	echo "<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>points</th>" .
+	echo "$back<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>points</th>" .
 		"<th>first</th><th>player</th><th class=\"sorttable_sorted\">pace$sortdown</th></tr>\n";
 	$q = 'select track n,name,pos,first,you,(you/first-1)*100 pace from (' .
 		'select a.track,' .
@@ -242,7 +244,6 @@ if (null !== $track) {
 } 
 ?>
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
-<p><a href="/?<?=$inctrackurl?>">back</a></p>
 <p>This site is free software; <a href="http://git.goeswhere.com/?p=ttscores.git;a=summary">its source</a> is available.
 I encourage you to submit or suggest changes instead of hosting your own.</p>
 <p><a href="http://blog.prelode.com/">Faux' blog</a>.
