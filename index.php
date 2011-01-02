@@ -70,7 +70,7 @@ $dbh = new PDO('sqlite:tt.db');
 
 $completed = completed();
 
-$back = "<p>(<a href=\"/?$inctrackurl\">back to championship</a>)</p>";
+$back = "(<a href=\"/?$inctrackurl\">back to championship</a>) ";
 
 function completers() {
 	global $dbh;
@@ -120,7 +120,7 @@ $sortup = '<span id="sorttable_sortrevind">&nbsp;&#x25B4;</span>';
 if (null !== $track) {
 	foreach ($dbh->query('select name from track_names where track=' . $track) as $row)
 		echo htmlentities($row["name"]) . "</title></head><body><h2>$track. " . track($track, $row['name']) . '</h2>';
-	echo $back . '<table class="sortable"><tr><th>pos</th><th>name</th><th>time</th></tr>';
+	echo "<p>$back</p>" . '<table class="sortable"><tr><th>pos</th><th>name</th><th>time</th></tr>';
 	$pos = 1;
 	$prevtime = 0;
 	foreach ($dbh->query('select player pwner, length ' .
@@ -136,15 +136,19 @@ if (null !== $track) {
 			++$skip;
 		echo "<tr><td>$pos</td><td>" . player($row['pwner']) . "</td><td>" . number_format($len,2) . "</td></tr>\n";
 	}
-	echo "</table>";
+	echo "</table><p>$back</p>";
 } else if (null !== $player) {
 	$esc = htmlentities($player);
 	$quoted = $dbh->quote($player);
 	$players = players();
 	$completers = completers();
+	$linktracks = '(<a href="#track">top</a>) ';
+	$linkgame = '(<a href="#game">tracks to game</a>) ';
+	$linkrisk = '(<a href="#risk">scores at risk</a>) ';
+
 	echo "player: $esc</title></head><body><h2>" . player($player) . ": " . number_format($players[$player],1) . " points</h2>";
 
-	echo "$back<table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>points</th>" .
+	echo "<p>$back<a name=\"track\"/>$linkgame$linkrisk</p><table class=\"sortable\"><tr><th>n</th><th>track</th><th>p</th><th>of</th><th>points</th>" .
 		"<th>first</th><th>player</th><th class=\"sorttable_sorted\">pace$sortdown</th></tr>\n";
 	$q = 'select track n,name,pos,first,you,(you/first-1)*100 pace from (' .
 		'select a.track,' .
@@ -175,7 +179,7 @@ if (null !== $track) {
 
 	if ($inctrack)
 		echo " (<a href=\"?player=" . urlencode($esc) . "\">clear track filter</a>)";
-	echo "</p><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p>" .
+	echo "</p><h2>tracks to game</h2><p>(...to increase your championship score.  You know you want to.)</p><p>$back<a name=\"game\"/>$linktracks$linkrisk</p>" .
 		"<table class=\"sortable\"><tr><th>n</th><th>name</th><th>len</th><th>position$sortup</th><th>est. points</th></tr>";
 
 	foreach ($dbh->query('select track n,name, '.
@@ -191,14 +195,14 @@ if (null !== $track) {
 	}
 	echo '</table>';
 
-	echo '<h2>scores at risk</h2><table class="sortable"><tr><th>n</th><th>name</th><th>hours</th></tr>';
+	echo '<h2>scores at risk</h2><p><a name="risk"/>' . $back . $linktracks . $linkgame . '</p><table class="sortable"><tr><th>n</th><th>name</th><th>hours</th></tr>';
 	foreach ($dbh->query('select track n,name,(14*24)-(strftime(\'%s\',\'now\')-taken/1000)/60./60 hours ' .
 			'from highscore inner join track_names using (track) ' .
 			'where player=' . $quoted . ' and taken!=0 ' . inctrack() . ' order by taken limit 10') as $row)
 		echo "<tr><td class=\"right\">{$row['n']}</td><td>" . track($row['n'], $row['name']) . '</td>' .
 			 '<td class="right">' . number_format($row['hours']) . '</td></tr>';
 	
-	echo '</table>';
+	echo "</table><p>$back$linktracks$linkgame$linkrisk</p>";
 } else {
 	echo "summary</title></head><body>";
 	$players = players();
@@ -210,7 +214,7 @@ if (null !== $track) {
 
 	$pos = 0;
 	$alist = '3,4,5,7,8,0,1,423,10,9,6';
-	echo "<h2>championship</h2><p>(sum(10*0.05^(pos/completed)))</p><p>";
+	echo '<h2>championship</h2><p>(sum(10*0.05^(pos/completed))) <a name="top"/>(<a href="#tracks">list of tracks</a>)</p><p>';
 	if ($inctrack != $alist)
 		echo "(<a href=\"?tracks=$alist\">A-list tracks only</a>)";
 	if ($inctrack)
@@ -233,7 +237,7 @@ if (null !== $track) {
 
 	echo "</table>";
 	echo '<form action="/" method="get"><p>View player: <input type="text" name="player"/><input type="submit" value="lookup"/></p></form>';
-	echo "<h2>tracks</h2><table class=\"sortable\"><tr><th>n</th><th>track</th><th>hs</th><th>length</th><th>winners</th></tr>";
+	echo '<h2>tracks</h2><p><a name="tracks"/>(<a href="#top">top</a>)</p><table class="sortable"><tr><th>n</th><th>track</th><th>hs</th><th>length</th><th>winners</th></tr>';
 	$prevn = -1;
 	foreach ($dbh->query('select track n, name, length, player pwner, pos, ' .
 			'(select count(*) from highscore b where a.track=b.track and player !="") cnt ' .
@@ -254,7 +258,7 @@ if (null !== $track) {
 
 		echo suffix($row['pos']) . ': ' . player($row['pwner']) . ", ";
 	}
-	echo "</td></tr></table>";
+	echo '</td></tr></table><p>(<a href="#top">top</a>) (<a href="#tracks">list of tracks</a>)</p>';
 } 
 ?>
 <p>Data from <?=date(DATE_RFC822, $date)?></p>
